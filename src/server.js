@@ -14,7 +14,7 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 // Rotas de negócio
 // app.use(base, roteador) monta sub-rotas sob '/alunos'.
-// app.use("/estudantes", alunosRoutes);
+app.use("/livros", alunosRoutes);
 
 // Middleware de erros (sempre por último)
 // Qualquer erro lançado em rotas anteriores cai aqui.
