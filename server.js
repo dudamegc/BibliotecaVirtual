@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import googleBooksRoutes from "./src/routes/googlebooks.routes.js";
+import usuarioRoutes from "./src/routes/usuarioRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Rotas
 app.use("/api", googleBooksRoutes);
+app.use("/api", usuarioRoutes);
 
 // Porta
 const PORT = process.env.PORT || 3000;
