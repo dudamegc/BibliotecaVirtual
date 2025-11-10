@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const LivroSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
+  idGoogle: { type: String, unique: true, sparse: true },
   titulo: { type: String, required: true },
   autor: { type: String },
   genero: { type: String },

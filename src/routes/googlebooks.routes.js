@@ -2,6 +2,8 @@ import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
 import Livro from "../models/Livro.js";
+import { verificarToken, somenteAdmin } from "../middleware/autenticação.js";
+
 
 dotenv.config();
 
@@ -19,6 +21,15 @@ router.get("/livros", async (req, res) => {
   }
 
   try {
+    //1 - Busca primeiro no banco local
+    const queryLocal = {};
+    if(titulo) queryLocal.titulo = {$regex: titulo, $options: "i"};
+    if(autor) queryLocal.autor = {$regex: autor, $options: "i"};
+    if(genero) queryLocal.genero = {$regex: genero, $options: "i"};
+
+    const livrosLocais = await Livro.find(queryLocal);
+
+    //2 - Depois busca na API Google Books
     let queryParts = [];
     if (titulo) queryParts.push(titulo);
     if (autor) queryParts.push(`inauthor:${autor}`);
@@ -35,10 +46,10 @@ router.get("/livros", async (req, res) => {
       },
     });
 
-    const livros = (response.data.items || []).map((item) => {
+    const livrosApi = (response.data.items || []).map((item) => {
       const info = item.volumeInfo;
       return {
-        id: item.id,
+        idGoogle: item.id,
         titulo: info.title,
         autor: info.authors?.join(", ") || "Desconhecido",
         genero: info.categories?.join(", ") || "Não informado",
@@ -49,91 +60,33 @@ router.get("/livros", async (req, res) => {
       };
     });
 
-    res.json(livros);
+    const todosLivros = [...livrosLocais, ...livrosApi];
+    res.json(todosLivros);
   } catch (error) {
     console.error("Erro ao buscar livros:", error.message);
     res.status(500).json({ erro: "Erro ao buscar livros" });
   }
 });
 
-// Salvar um livro no banco 
-router.post("/livros", async (req, res) => {
+// Adicionar livro (somente admin)
+router.post("/livros", verificarToken, somenteAdmin, async (req, res) => {
   try {
     const livro = new Livro(req.body);
     await livro.save();
     res.status(201).json(livro);
   } catch (error) {
-    res.status(400).json({ erro: "Erro ao salvar livro." });
+    res.status(400).json({ erro: "Erro ao adicionar livro", detalhes: error.message});
   }
-});
+})
 
-/**
- * Favoritar por Google Books volumeId (googleId)
- * POST /api/livros/favoritar
- * body: { googleId: "volumeId_do_google" }
- *
- * Fluxo:
- * - se já existir no BD (campo googleId), apenas atualiza favorito = true
- * - senão, busca na Google Books, cria o documento com favorito = true
- */
-router.post("/livros/favoritar", async (req, res) => {
-  const { googleId } = req.body;
-
-  if (!googleId) {
-    return res.status(400).json({ erro: "Informe o googleId (volumeId) no body" });
-  }
-
+//Deletar livro (somente admin)
+router.delete("/livros/:id", verificarToken, somenteAdmin, async (req, res) => {
   try {
-    // procura no banco local primeiro
-    let livro = await Livro.findOne({ googleId });
-
-    if (livro) {
-      // já existe → só marca favorito
-      livro.favorito = true;
-      await livro.save();
-      return res.status(200).json(livro);
-    }
-
-    // não existe → buscar na Google Books API
-    const gbRes = await axios.get(`https://www.googleapis.com/books/v1/volumes/${googleId}`, {
-      params: { key: apiKey },
-    });
-
-    const info = gbRes.data.volumeInfo;
-
-    const novo = new Livro({
-      googleId,
-      titulo: info.title,
-      autor: info.authors?.join(", ") || "Desconhecido",
-      genero: info.categories?.join(", ") || "Não informado",
-      descricao: info.description,
-      capa: info.imageLinks?.thumbnail,
-      publicadoEm: info.publishedDate,
-      idioma: info.language,
-      favorito: true,
-    });
-
-    await novo.save();
-    res.status(201).json(novo);
+    const livro = await Livro.findByIdAndDelete(req.params.id);
+    if (!livro) return res.status(404).json({ erro: "Livro não encontrado" });
+    res.json({ mensagem: "Livro excluído com sucesso" });
   } catch (error) {
-    console.error("Erro ao favoritar por googleId:", error.response?.data || error.message);
-    res.status(500).json({ erro: "Erro ao favoritar livro" });
-  }
-});
-
-/**
- * Listar apenas favoritos
- * GET /api/livros?favoritos=true
- * ou rota dedicada:
- * GET /api/livros/favoritos
- */
-router.get("/livros/favoritos", async (req, res) => {
-  try {
-    const favoritos = await Livro.find({ favorito: true });
-    res.json(favoritos);
-  } catch (error) {
-    console.error("Erro ao listar favoritos:", error);
-    res.status(500).json({ erro: "Erro ao listar favoritos" });
+    res.status(500).json({ erro: "Erro ao excluir livro" });
   }
 });
 
