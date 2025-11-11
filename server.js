@@ -4,6 +4,7 @@ import { connect } from "./src/db.js";
 import error from "./src/middleware/error.js";
 import googleBooksRoutes from "./src/routes/googlebooks.routes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
+import leiturasRoutes from "./src/models/leitura.js";
 import cors from "cors";
 
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(express.json());
 // Rotas
 app.use("/api", googleBooksRoutes);
 app.use("/api", usuarioRoutes);
+app.use("/api", leiturasRoutes);
 
 // Porta
 const PORT = process.env.PORT || 3000;
@@ -29,4 +31,4 @@ app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));
 .catch((err) => {
 console.error("Falha ao conectar no MongoDB:", err);
 process.exit(1);
-});
+}); 
