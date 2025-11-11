@@ -1,3 +1,9 @@
+export const limparId = (req, res, next) => {
+  if (req.body && req.body.id) {
+    delete req.body.id;
+  }
+  next();
+};
 import jwt from "jsonwebtoken";
 import Usuario from "../models/usuarios.js";
 
