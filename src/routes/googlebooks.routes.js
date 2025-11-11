@@ -7,57 +7,101 @@ dotenv.config();
 const router = express.Router();
 const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
 
-// Rota para buscar livros em português
-router.get("/livros", async (req, res) => {
-  const { titulo } = req.query;
+//GET ----------------------------------------------------
 
-  if (!titulo) {
-    return res.status(400).json({ erro: "O parâmetro 'titulo' é obrigatório" });
+// Rota para BUSCAR livros em português
+router.get("/livros", async (req, res) => {
+  const { titulo, autor, genero } = req.query;
+
+  // Verifica se pelo menos um parâmetro foi passado
+  if (!titulo && !autor && !genero) {
+    return res
+      .status(400)
+      .json({ erro: "Informe pelo menos um título, autor ou gênero." });
   }
 
   try {
-    const response = await axios.get("https://www.googleapis.com/books/v1/volumes", {
-      params: {
-        q: titulo,
-        key: apiKey,
-        language: "pt",
-        printType: "books",
-        totalItems: 20,
-      },
-    });
+    // Usa array para montar a query dinamicamente
+    let queryParts = [];
 
-    // 🔹 Garante que só retorne livros em português
-    const livros = (response.data.items || []).filter(
-      (livro) =>
-        livro.volumeInfo.language === "pt" ||
-        (livro.volumeInfo.language?.startsWith("pt-")) // cobre pt-BR e pt-PT
-    );
+    if (titulo) queryParts.push(titulo);
+    if (autor) queryParts.push(`inauthor:${autor}`);
+    if (genero) queryParts.push(`subject:${genero}`);
 
-    // 🔹 Se não houver nenhum livro em português, tenta buscar explicitamente 'inauthor' + 'subject' em português
-    if (livros.length === 0) {
-      const altResponse = await axios.get("https://www.googleapis.com/books/v1/volumes", {
+    // Junta as partes com '+'
+    const query = queryParts.join("+");
+
+    const response = await axios.get(
+      "https://www.googleapis.com/books/v1/volumes",
+      {
         params: {
-          q: `${titulo}+subject:portuguese`,
+          q: query,
           key: apiKey,
+          langRestrict: "pt",
           printType: "books",
           maxResults: 20,
         },
-      });
+      }
+    );
 
-      const livrosAlt = (altResponse.data.items || []).filter(
+    // Filtra apenas livros em português e organiza os dados
+    const livros = (response.data.items || [])
+      .filter(
         (livro) =>
           livro.volumeInfo.language === "pt" ||
-          (livro.volumeInfo.language?.startsWith("pt-"))
-      );
+          livro.volumeInfo.language?.startsWith("pt-")
+      )
+      .map((livro) => {
+        const livroInfo = livro.volumeInfo;
 
-      return res.json(livrosAlt);
-    }
+// Monta o objeto do livro com os campos desejados
+        return {
+          id: livro.id,
+          titulo: livroInfo.title || "Título não disponível",
+          autor: livroInfo.authors
+            ? livroInfo.authors.join(", ")
+            : "Desconhecido",
+          genero: livroInfo.categories
+            ? livroInfo.categories.join(", ")
+            : "Não informado",
+          descricao: livroInfo.description || "Descrição não disponível",
+          capa: livroInfo.imageLinks ? livroInfo.imageLinks.thumbnail : null,
+          publicadoEm: livroInfo.publishedDate || "Data não disponível",
+          idioma: livroInfo.language || "pt",
+          favorito: false, // Valor padrão
+        };
+      });
 
     res.json(livros);
   } catch (error) {
     console.error("Erro ao buscar livros:", error.message);
     res.status(500).json({ erro: "Erro ao buscar livros" });
   }
+});
+
+//POST ----------------------------------------------------
+
+//Salvar um livro nos favoritos
+router.post("/livros", async (req, res) => {
+  try {
+    const livro = new Livro(req.body);
+    await livro.save();
+    res.status(201).json(livro);
+  } catch (error) { 
+    res.status(400).json({erro: "Erro ao salvar o livro nos favoritos"});
+  }
+});
+
+// GET ----------------------------------------------------
+
+// listar livros favoritos
+router.get("/livros/favoritos", async (req, res) => {
+  try {
+    const livrosFavoritos = await Livro.find({ favorito: true });
+    res.json(livrosFavoritos);
+  } catch(error){{
+    res.status(500).json({ erro: "Erro ao listar livros favoritos" });
+  }}
 });
 
 export default router;
