@@ -1,8 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-async function connect(uri) {
-mongoose.set("strictQuery", true);
-await mongoose.connect(uri);
-console.log("MongoDB conectado:", mongoose.connection.name);
+export async function connect(uri) {
+  mongoose.set("strictQuery", true);
+  await mongoose.connect(uri);
+  console.log(" MongoDB conectado:", mongoose.connection.name);
 }
-module.exports = { connect };
