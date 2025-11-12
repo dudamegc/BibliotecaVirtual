@@ -1,6 +1,6 @@
-const express = req("express");
+import express from 'express';
 const router = express.Router();
-const Leitura = require("../models/Leituras");
+import Leitura from '../models/leitura.js';
 
 // POST /leituras – Registrar início de leitura
 router.post("/", async (req, res) => {
@@ -44,4 +44,4 @@ router.get("/historico/:usuarioId", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

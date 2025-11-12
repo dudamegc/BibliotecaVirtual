@@ -1,4 +1,4 @@
-const mongoose = req("mongoose");
+import mongoose from "mongoose";
 
 const LeituraSchema = new mongoose.Schema({
   nome: { type: String, required: true },
@@ -8,4 +8,4 @@ const LeituraSchema = new mongoose.Schema({
   ultimaAtualizacao: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Leitura", LeituraSchema);
+export default mongoose.model("Leitura", LeituraSchema);
