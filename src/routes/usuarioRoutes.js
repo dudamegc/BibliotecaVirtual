@@ -11,18 +11,18 @@ dotenv.config();
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "chaveSuperSecreta";
 
-// Criar novo usuário (fixa tipo como "leitor")
 router.post("/usuarios", async (req, res, next) => {
   try {
     const { nome, email, senha } = req.body;
-    const senhaHash = await bcrypt.hash(senha, 10);
 
-    const usuario = await Usuario.create({
+    const usuario = new Usuario({
       nome,
       email,
-      senha: senhaHash,
+      senha,
       tipo: "leitor",
     });
+
+    await usuario.save(); // agora ativa o pre("save")
 
     res.status(201).json({ mensagem: "Usuário criado com sucesso!", usuario });
   } catch (error) {
