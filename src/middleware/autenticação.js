@@ -40,11 +40,9 @@ export const verificarToken = async (req, res, next) => {
   }
 };
 
-<<<<<<< HEAD
+
 // Middleware: verifica se o usuário é administrador
-=======
-// ✅ Middleware: verifica se o usuário é administrador
->>>>>>> 3e2a219c6ea4b4628976abcf035bdfd136e2c908
+
 export const somenteAdmin = (req, res, next) => {
   try {
     if (!req.usuario) {

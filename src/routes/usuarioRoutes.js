@@ -5,6 +5,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { verificarToken, somenteAdmin } from "../middleware/autenticação.js";
+import PDFDocument from "pdfkit";
+
 
 dotenv.config();
 
@@ -13,22 +15,23 @@ const JWT_SECRET = process.env.JWT_SECRET || "chaveSuperSecreta";
 
 router.post("/usuarios", async (req, res, next) => {
   try {
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, tipo } = req.body;  // <-- aqui você declara tipo
 
     const usuario = new Usuario({
       nome,
       email,
       senha,
-      tipo: "leitor",
+      tipo: tipo || "leitor",   // <-- aqui pode usar sem erros
     });
 
-    await usuario.save(); // agora ativa o pre("save")
+    await usuario.save();
 
     res.status(201).json({ mensagem: "Usuário criado com sucesso!", usuario });
   } catch (error) {
     next(error);
   }
 });
+
 
 //  Login → gera token JWT
 router.post("/login", async (req, res, next) => {
