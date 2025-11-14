@@ -21,7 +21,7 @@ const usuarioSchema = new Schema(
   { timestamps: true }
 );
 
-// ✅ Antes de salvar, criptografa a senha corretamente
+// Antes de salvar, criptografa a senha corretamente
 usuarioSchema.pre("save", async function (next) {
   if (this.isModified("senha")) {
     this.senha = await bcrypt.hash(this.senha, 10);
